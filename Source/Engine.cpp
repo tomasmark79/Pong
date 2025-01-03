@@ -4,140 +4,108 @@
 #include <engine/version.h>
 #include <iostream>
 
-#include <raylib.h>
+#include "raylib.h"
 
-#define MAX_BUILDINGS 100
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#include <vector>
+
+#if defined(PLATFORM_WEB)
+#include <emscripten/emscripten.h>
+#endif
+
+//----------------------------------------------------------------------------------
+// Some Defines
+//----------------------------------------------------------------------------------
+#define PLAYER_MAX_LIFE 5
+#define LINES_OF_BRICKS 5
+#define BRICKS_PER_LINE 20
+
+//----------------------------------------------------------------------------------
+// Types and Structures Definition
+//----------------------------------------------------------------------------------
+typedef struct Player
+{
+    Vector2 position;
+    Vector2 size;
+    int     life;
+} Player;
+
+typedef struct Ball
+{
+    Vector2 position;
+    Vector2 speed;
+    int     radius;
+    bool    active;
+} Ball;
+
+typedef struct Brick
+{
+    Vector2 position;
+    bool    active;
+} Brick;
+
+//------------------------------------------------------------------------------------
+// Global Variables Declaration
+//------------------------------------------------------------------------------------
+static const int screenWidth = 800;
+static const int screenHeight = 600;
+
+static bool gameOver = false;
+static bool pause = false;
+
+static Player  player = {0};
+static Ball    ball = {0};
+static Brick   brick[LINES_OF_BRICKS][BRICKS_PER_LINE] = {0};
+static Vector2 brickSize = {0};
+
+//------------------------------------------------------------------------------------
+// Module Functions Declaration (local)
+//------------------------------------------------------------------------------------
+static void InitGame(void);        // Initialize game
+static void UpdateGame(void);      // Update game (one frame)
+static void DrawGame(void);        // Draw game (one frame)
+static void UnloadGame(void);      // Unload game
+static void UpdateDrawFrame(void); // Update and Draw (one frame)
 
 Engine::Engine()
 {
     std::cout << "--- Engine v." << ENGINE_VERSION << " instantiated ---" << std::endl;
 
-    // Initialization
-    //--------------------------------------------------------------------------------------
-    const int screenWidth = 800;
-    const int screenHeight = 600;
+    // Initialization (Note windowTitle is unused on Android)
+    //---------------------------------------------------------
+    InitWindow(screenWidth, screenHeight, "classic game: pong");
 
-    InitWindow(screenWidth, screenHeight, "raylib [core] example - 2d camera");
+    Vector2 mainMonitorPosition = GetMonitorPosition(0);
+    SetWindowPosition(
+        mainMonitorPosition.x + (GetMonitorWidth(0) - GetScreenWidth()) / 2,
+        mainMonitorPosition.y + (GetMonitorHeight(0) - GetScreenHeight()) / 2
+    );
 
-    Rectangle player = {400, 280, 40, 40};
-    Rectangle buildings[MAX_BUILDINGS] = {0};
-    Color     buildColors[MAX_BUILDINGS] = {0};
+    // InitGame();
 
-    int spacing = 0;
-
-    for (int i = 0; i < MAX_BUILDINGS; i++)
-    {
-        buildings[i].width = (float)GetRandomValue(50, 200);
-        buildings[i].height = (float)GetRandomValue(100, 800);
-        buildings[i].y = screenHeight - 130.0f - buildings[i].height;
-        buildings[i].x = -6000.0f + spacing;
-
-        spacing += (int)buildings[i].width;
-
-        buildColors[i] = (Color
-        ){(unsigned char)GetRandomValue(200, 240),
-          (unsigned char)GetRandomValue(200, 240),
-          (unsigned char)GetRandomValue(200, 250),
-          255};
-    }
-
-    Camera2D camera = {0};
-    camera.target = (Vector2){player.x + 20.0f, player.y + 20.0f};
-    camera.offset = (Vector2){screenWidth / 2.0f, screenHeight / 2.0f};
-    camera.rotation = 0.0f;
-    camera.zoom = 1.0f;
-
-    SetTargetFPS(60); // Set our game to run at 60 frames-per-second
+#if defined(PLATFORM_WEB)
+    emscripten_set_main_loop(UpdateDrawFrame, 60, 1);
+#else
+    SetTargetFPS(120);
     //--------------------------------------------------------------------------------------
 
     // Main game loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
-        // Update
+        // Update and Draw
         //----------------------------------------------------------------------------------
-        // Player movement
-        if (IsKeyDown(KEY_RIGHT))
-            player.x += 2;
-        else if (IsKeyDown(KEY_LEFT))
-            player.x -= 2;
-
-        // Camera target follows player
-        camera.target = (Vector2){player.x + 20, player.y + 20};
-
-        // Camera rotation controls
-        if (IsKeyDown(KEY_A))
-            camera.rotation--;
-        else if (IsKeyDown(KEY_S))
-            camera.rotation++;
-
-        // Limit camera rotation to 80 degrees (-40 to 40)
-        if (camera.rotation > 40)
-            camera.rotation = 40;
-        else if (camera.rotation < -40)
-            camera.rotation = -40;
-
-        // Camera zoom controls
-        camera.zoom += ((float)GetMouseWheelMove() * 0.05f);
-
-        if (camera.zoom > 3.0f)
-            camera.zoom = 3.0f;
-        else if (camera.zoom < 0.1f)
-            camera.zoom = 0.1f;
-
-        // Camera reset (zoom and rotation)
-        if (IsKeyPressed(KEY_R))
-        {
-            camera.zoom = 1.0f;
-            camera.rotation = 0.0f;
-        }
-        //----------------------------------------------------------------------------------
-
-        // Draw
-        //----------------------------------------------------------------------------------
-        BeginDrawing();
-
-        ClearBackground(RAYWHITE);
-
-        BeginMode2D(camera);
-
-        DrawRectangle(-6000, 320, 13000, 8000, DARKGRAY);
-
-        for (int i = 0; i < MAX_BUILDINGS; i++)
-            DrawRectangleRec(buildings[i], buildColors[i]);
-
-        DrawRectangleRec(player, RED);
-
-        DrawLine(
-            (int)camera.target.x, -screenHeight * 10, (int)camera.target.x, screenHeight * 10, GREEN
-        );
-        DrawLine(
-            -screenWidth * 10, (int)camera.target.y, screenWidth * 10, (int)camera.target.y, GREEN
-        );
-
-        EndMode2D();
-
-        DrawText("SCREEN AREA", 640, 10, 20, RED);
-
-        DrawRectangle(0, 0, screenWidth, 5, RED);
-        DrawRectangle(0, 5, 5, screenHeight - 10, RED);
-        DrawRectangle(screenWidth - 5, 5, 5, screenHeight - 10, RED);
-        DrawRectangle(0, screenHeight - 5, screenWidth, 5, RED);
-
-        DrawRectangle(10, 10, 250, 113, Fade(SKYBLUE, 0.5f));
-        DrawRectangleLines(10, 10, 250, 113, BLUE);
-
-        DrawText("Free 2d camera controls:", 20, 20, 10, BLACK);
-        DrawText("- Right/Left to move Offset", 40, 40, 10, DARKGRAY);
-        DrawText("- Mouse Wheel to Zoom in-out", 40, 60, 10, DARKGRAY);
-        DrawText("- A / S to Rotate", 40, 80, 10, DARKGRAY);
-        DrawText("- R to reset Zoom and Rotation", 40, 100, 10, DARKGRAY);
-
-        EndDrawing();
+        UpdateDrawFrame();
         //----------------------------------------------------------------------------------
     }
-
+#endif
     // De-Initialization
     //--------------------------------------------------------------------------------------
+    UnloadGame(); // Unload loaded data (textures, sounds, models...)
+
     CloseWindow(); // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
 }
@@ -145,4 +113,282 @@ Engine::Engine()
 Engine::~Engine()
 {
     std::cout << "--- Engine uninstantiated ---" << std::endl;
+}
+
+//------------------------------------------------------------------------------------
+// Module Functions Definitions (local)
+//------------------------------------------------------------------------------------
+
+// Initialize game variables
+void InitGame(void)
+{
+    // brickSize = (Vector2){(float)GetScreenWidth() / BRICKS_PER_LINE, 40.0f};
+
+    // Initialize player
+    player.position = (Vector2){57, screenHeight / 2};
+    player.size = (Vector2){14, screenHeight / 6};
+    player.life = PLAYER_MAX_LIFE;
+
+    // Initialize ball
+    ball.position = (Vector2){player.position.x + ball.radius,
+                              player.position.y - player.size.y / 2 - ball.radius};
+
+
+    ball.speed = (Vector2){0, 0};
+    ball.radius = 7;
+    ball.active = false;
+}
+
+// Update game (one frame)
+void UpdateGame(void)
+{
+    if (!gameOver)
+    {
+        if (IsKeyPressed('P'))
+            pause = !pause;
+
+        if (!pause)
+        {
+            // Player movement logic
+            if (IsKeyDown(KEY_UP))
+                player.position.y -= 5;
+            if ((player.position.y - (player.size.y / 2)) <= 0)
+                player.position.y = (player.size.y / 2);
+
+            if (IsKeyDown(KEY_DOWN))
+                player.position.y += 5;
+            if ((player.position.y + player.size.y / 2) >= screenHeight)
+                player.position.y = screenHeight - (player.size.y / 2);
+
+            // Ball launching logic
+            if (!ball.active)
+            {
+                if (IsKeyPressed(KEY_SPACE))
+                {
+                    ball.active = true;
+                    ball.speed = (Vector2){5, 0};
+                }
+            }
+
+            // Ball movement logic
+            if (ball.active)
+            {
+                ball.position.x += ball.speed.x;
+                ball.position.y += ball.speed.y;
+            }
+            else
+            {
+                ball.position = (Vector2){player.position.x + (ball.radius * 2),
+                                          player.position.y};
+            }
+
+            // Collision logic: ball vs walls
+            if ((ball.position.x + ball.radius) >= screenWidth)
+                ball.speed.x *= -1;
+
+            if ((ball.position.x - ball.radius) <= 0)
+            {
+                ball.speed = (Vector2){0, 0};
+            }
+
+            if (((ball.position.y - ball.radius) <= 0 ||
+                 ((ball.position.y + ball.radius) >= screenHeight)))
+                ball.speed.y *= -1;
+
+            // if ((ball.position.y + ball.radius) >= screenHeight)
+            //{
+            //  ball.speed = (Vector2){0, 0};
+            //  ball.active = false;
+
+            // player.life--;
+            //}
+
+            // Collision logic: ball vs player
+            if (CheckCollisionCircleRec(
+                    ball.position,
+                    ball.radius,
+                    (Rectangle){player.position.x - player.size.x / 2,
+                                player.position.y - player.size.y / 2,
+                                player.size.x,
+                                player.size.y}
+                ))
+            {
+                if (ball.speed.x < 0)
+                {
+                    ball.speed.x *= -1;
+                    ball.speed.y = (ball.position.y - player.position.y) / (player.size.y / 2) * 5;
+                }
+            }
+
+            // // Collision logic: ball vs bricks
+            // for (int i = 0; i < LINES_OF_BRICKS; i++)
+            // {
+            //     for (int j = 0; j < BRICKS_PER_LINE; j++)
+            //     {
+            //         if (brick[i][j].active)
+            //         {
+            //             // Hit below
+            //             if (((ball.position.y - ball.radius) <=
+            //                  (brick[i][j].position.y + brickSize.y / 2)) &&
+            //                 ((ball.position.y - ball.radius) >
+            //                  (brick[i][j].position.y + brickSize.y / 2 + ball.speed.y)) &&
+            //                 ((fabs(ball.position.x - brick[i][j].position.x)) <
+            //                  (brickSize.x / 2 + ball.radius * 2 / 3)) &&
+            //                 (ball.speed.y < 0))
+            //             {
+            //                 brick[i][j].active = false;
+            //                 ball.speed.y *= -1;
+            //             }
+            //             // Hit above
+            //             else if (((ball.position.y + ball.radius) >=
+            //                       (brick[i][j].position.y - brickSize.y / 2)) &&
+            //                      ((ball.position.y + ball.radius) <
+            //                       (brick[i][j].position.y - brickSize.y / 2 + ball.speed.y)) &&
+            //                      ((fabs(ball.position.x - brick[i][j].position.x)) <
+            //                       (brickSize.x / 2 + ball.radius * 2 / 3)) &&
+            //                      (ball.speed.y > 0))
+            //             {
+            //                 brick[i][j].active = false;
+            //                 ball.speed.y *= -1;
+            //             }
+            //             // Hit left
+            //             else if (((ball.position.x + ball.radius) >=
+            //                       (brick[i][j].position.x - brickSize.x / 2)) &&
+            //                      ((ball.position.x + ball.radius) <
+            //                       (brick[i][j].position.x - brickSize.x / 2 + ball.speed.x)) &&
+            //                      ((fabs(ball.position.y - brick[i][j].position.y)) <
+            //                       (brickSize.y / 2 + ball.radius * 2 / 3)) &&
+            //                      (ball.speed.x > 0))
+            //             {
+            //                 brick[i][j].active = false;
+            //                 ball.speed.x *= -1;
+            //             }
+            //             // Hit right
+            //             else if (((ball.position.x - ball.radius) <=
+            //                       (brick[i][j].position.x + brickSize.x / 2)) &&
+            //                      ((ball.position.x - ball.radius) >
+            //                       (brick[i][j].position.x + brickSize.x / 2 + ball.speed.x)) &&
+            //                      ((fabs(ball.position.y - brick[i][j].position.y)) <
+            //                       (brickSize.y / 2 + ball.radius * 2 / 3)) &&
+            //                      (ball.speed.x < 0))
+            //             {
+            //                 brick[i][j].active = false;
+            //                 ball.speed.x *= -1;
+            //             }
+            //         }
+            //     }
+            // }
+
+            // Game over logic
+            if (player.life <= 0)
+                gameOver = true;
+            else
+            {
+                // gameOver = true;
+
+                // for (int i = 0; i < LINES_OF_BRICKS; i++)
+                // {
+                //     for (int j = 0; j < BRICKS_PER_LINE; j++)
+                //     {
+                //         if (brick[i][j].active)
+                //             // gameOver = false;
+                //     }
+                // }
+            }
+        }
+    }
+    else
+    {
+        if (IsKeyPressed(KEY_ENTER))
+        {
+            InitGame();
+            gameOver = false;
+        }
+    }
+}
+
+// Draw game (one frame)
+void DrawGame(void)
+{
+    BeginDrawing();
+
+    ClearBackground(RAYWHITE);
+
+    if (!gameOver)
+    {
+        // Draw player bar with unified coordinates
+        DrawRectangle(
+            player.position.x - player.size.x / 2,
+            player.position.y - player.size.y / 2,
+            player.size.x,
+            player.size.y,
+            BLACK
+        );
+
+        // Draw player lives
+        for (int i = 0; i < player.life; i++)
+            DrawText("*", screenWidth - 100 - (40 * i), screenHeight - 40, 40, MAROON);
+
+        // Draw ball
+        DrawCircleV(ball.position, ball.radius, MAROON);
+
+        // // Draw bricks
+        // for (int i = 0; i < LINES_OF_BRICKS; i++)
+        // {
+        //     for (int j = 0; j < BRICKS_PER_LINE; j++)
+        //     {
+        //         if (brick[i][j].active)
+        //         {
+        //             if ((i + j) % 2 == 0)
+        //                 DrawRectangle(
+        //                     brick[i][j].position.x - brickSize.x / 2,
+        //                     brick[i][j].position.y - brickSize.y / 2,
+        //                     brickSize.x,
+        //                     brickSize.y,
+        //                     GRAY
+        //                 );
+        //             else
+        //                 DrawRectangle(
+        //                     brick[i][j].position.x - brickSize.x / 2,
+        //                     brick[i][j].position.y - brickSize.y / 2,
+        //                     brickSize.x,
+        //                     brickSize.y,
+        //                     DARKGRAY
+        //                 );
+        //         }
+        //     }
+        // }
+
+        if (pause)
+            DrawText(
+                "GAME PAUSED",
+                screenWidth / 2 - MeasureText("GAME PAUSED", 40) / 2,
+                screenHeight / 2 - 40,
+                40,
+                GRAY
+            );
+    }
+    else
+        DrawText(
+            "PRESS [ENTER] TO PLAY AGAIN",
+            GetScreenWidth() / 2 - MeasureText("PRESS [ENTER] TO PLAY AGAIN", 20) / 2,
+            GetScreenHeight() / 2 - 50,
+            20,
+            GRAY
+        );
+
+    EndDrawing();
+}
+
+// Unload game variables
+void UnloadGame(void)
+{
+    // TODO: Unload all dynamic loaded data (textures, sounds, models...)
+}
+
+// Update and Draw (one frame)
+void UpdateDrawFrame(void)
+{
+    UpdateGame();
+    DrawGame();
 }
