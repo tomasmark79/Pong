@@ -3,7 +3,7 @@
 Starter for Raylib framework minigame project. 👾
 
 Author: **Tomáš Mark**  
-Version: **main**
+Version: **0.0.1**
 
 https://github.com/user-attachments/assets/ff10ca81-cada-41d6-9e22-67cbfa7393e0
 
