@@ -1,5 +1,7 @@
 from conan import ConanFile
 from conan.tools.cmake import cmake_layout
+from conan.tools.system.package_manager import Apt
+
 
 class CompressorRecipe(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
