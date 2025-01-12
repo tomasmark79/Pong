@@ -1,6 +1,5 @@
 #include "Engine/Engine.hpp"
 
-// #include <EmojiTools/EmojiTools.hpp> // yet dissabled
 #include <engine/version.h>
 #include <iostream>
 
@@ -73,6 +72,8 @@ static Ball    ball = {0};
 static Brick   brick[LINES_OF_BRICKS][BRICKS_PER_LINE] = {0};
 static Vector2 brickSize = {0};
 
+static int score = 0;
+
 //------------------------------------------------------------------------------------
 // Module Functions Declaration (local)
 //------------------------------------------------------------------------------------
@@ -85,6 +86,8 @@ static void InitNotes(std::vector<AudioSample> &notes);
 static void PlayRandomNote();
 static void PlayCDur();
 static void PlayProgressionCDur();
+static void PlayProgressionCMinor();
+static void PlayProgressionCMinorReversed();
 void        PlayRandomNoteInCMinorProgression();
 
 Engine::Engine()
@@ -220,12 +223,17 @@ void UpdateGame(void)
             {
                 ball.speed.x *= -1;
                 PlayRandomNoteInCMinorProgression();
+                
             }
 
-            if ((ball.position.x - ball.radius) <= 0)
+            if (ball.active && (ball.position.x - ball.radius) <= 0)
             {
                 ball.speed = (Vector2){0, 0};
-                PlayRandomNoteInCMinorProgression();
+                    PlayRandomNoteInCMinorProgression();
+                ball.active = false;
+                player.life--;
+                //PlayProgressionCMinor();
+                PlayProgressionCMinorReversed();
             }
 
             if (((ball.position.y - ball.radius) <= 0 ||
@@ -233,6 +241,7 @@ void UpdateGame(void)
             {
                 ball.speed.y *= -1;
                 PlayRandomNoteInCMinorProgression();
+
             }
 
             // if ((ball.position.y + ball.radius) >= screenHeight)
@@ -259,6 +268,7 @@ void UpdateGame(void)
                     ball.speed.x *= -1;
                     ball.speed.y = (ball.position.y - player.position.y) / (player.size.y / 2) * 5;
                     PlayRandomNoteInCMinorProgression();
+                    score++;
                 }
             }
 
@@ -367,6 +377,9 @@ void DrawGame(void)
             player.size.y,
             BLACK
         );
+
+        std::string scoreStr = "Score:\t" + std::to_string(score);
+        DrawText(scoreStr.c_str(), 10, 10, 20, MAROON);
 
         // Draw player lives
         for (int i = 0; i < player.life; i++)
@@ -545,4 +558,74 @@ void PlayProgressionCDur()
     PlaySound(notes[40].sound);
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
     PlaySound(notes[43].sound);
+}
+
+void PlayProgressionCMinor()
+{
+    PlaySound(notes[0].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[3].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[7].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[10].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[12].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[15].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[19].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[22].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[24].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[27].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[31].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[34].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[36].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[39].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[43].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[46].sound);
+}
+
+void PlayProgressionCMinorReversed()
+{
+    PlaySound(notes[46].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[43].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[39].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[36].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[34].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[31].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[27].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[24].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[22].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[19].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[15].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[12].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[10].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[7].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[3].sound);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    PlaySound(notes[0].sound);
 }
