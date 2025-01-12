@@ -27,7 +27,7 @@
             "name": "Debug RelWithDebInfo Standalone Target",
             "type": "cppdbg",
             "request": "launch", /*🪲*/
-            "program": "${workspaceFolder}/Build/Standalone/default/RelWithDebInfo/VCMController",
+            "program": "${workspaceFolder}/Build/Standalone/default/RelWithDebInfo/Pong",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

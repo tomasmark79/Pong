@@ -12,20 +12,26 @@ RED = "\033[0;31m"
 NC = "\033[0m"
 LIGHTBLUE = "\033[1;34m"
 
+pythonVersion = sys.version.split()[0]
 workSpaceDir = os.path.dirname(os.path.abspath(__file__))
-nameOfScript = os.path.basename(__file__) + " (python version)"
+nameOfScript = os.path.basename(__file__) + f" is using Python runtime version: {pythonVersion}\n"
 scriptAuthor = "(c) Tomáš Mark 2004"
-scriptVersion = "0.0.1"
+scriptVersion = "0.0.2"
 
 taskName = sys.argv[1] if len(sys.argv) > 1 else None
 buildArch = sys.argv[2] if len(sys.argv) > 2 else None
 buildType = sys.argv[3] if len(sys.argv) > 3 else "Not Defined"
 isCrossCompilation = False
 
+
 buildFolderName = "Build"
 installOutputDir = os.path.join(workSpaceDir, buildFolderName, "Install")
 artefactsOutputDir = os.path.join(workSpaceDir, buildFolderName, "Artefacts")
-valid_archs = ["default", "x86_64-unknown-linux-gnu", "x86_64-w64-mingw32", "aarch64-linux-gnu", "independent_parameter"]
+valid_archs = ["default", \
+    "x86_64-unknown-linux-gnu", \
+    "x86_64-w64-mingw32", \
+    "aarch64-rpi4-linux-gnu", \
+    "independent_parameter"]
 valid_build_types = ["Debug", "Release", "RelWithDebInfo", "MinSizeRel"]
 
 def exit_ok(msg):
@@ -40,7 +46,7 @@ if not taskName:
     exit_with_error("Task name is missing. Exiting.")
 
 # Print out the welcom and configuration
-print(f"{YELLOW}{nameOfScript} {scriptAuthor} v {scriptVersion} {NC}")
+print(f"{YELLOW}{nameOfScript}{scriptAuthor} v {scriptVersion} {NC}")
 print(f"{LIGHTBLUE}taskName\t: {taskName}{NC}")
 print(f"{GREEN}Build Arch\t: {buildArch}")
 print(f"Build Type\t: {buildType}")
@@ -58,6 +64,18 @@ else:
         exit_with_error("Undefined build architecture. Exiting.")
 
 print(f"{YELLOW}Cross\t\t: {isCrossCompilation}{NC}")
+
+### Get version and names from CMakeLists.txt
+def get_version_and_names():
+    with open('CMakeLists.txt', 'r') as file:
+        cmake_content = file.read()
+    with open('Standalone/CMakeLists.txt', 'r') as file:
+        standalone_content = file.read()
+    lib_ver = re.search(r'VERSION\s+(\d+\.\d+\.\d+)', cmake_content).group(1)
+    lib_name = re.search(r'set\(LIBRARY_NAME\s+(\w+)', cmake_content).group(1)
+    st_name = re.search(r'set\(STANDALONE_NAME\s+(\w+)', standalone_content).group(1)
+    return lib_ver, lib_name, st_name
+
 
 ### Log to file, revision 1
 def log2file(message):
@@ -141,6 +159,8 @@ def cmake_configure(src, bdir):
 
 ### CMake build, revision 3
 def cmake_build(bdir, target=None):
+    
+    # --target is optional
     if target is None:
         target = ""
     else:
@@ -149,12 +169,9 @@ def cmake_build(bdir, target=None):
     conan_build_sh_file = os.path.join(workSpaceDir, bdir, 'conanbuild.sh')
     if os.path.exists(conan_build_sh_file):
         bashCmd = f'source "{conan_build_sh_file}" && cmake --build "{os.path.abspath(bdir)}" {target} -j {os.cpu_count()}'
-        #bashCmd = f'cmake --build "{os.path.abspath(bdir)}" {target} -j {os.cpu_count()}'
     else:
         bashCmd = f'cmake --build "{os.path.abspath(bdir)}" {target} -j {os.cpu_count()}'
     execute_subprocess(bashCmd, "/bin/bash")
-
-
 
 ### Clean build folder, revision 1   
 def clean_build_folder(bdir):
@@ -168,12 +185,6 @@ def build_spltr(lib, st):
         cmake_build(get_build_dir("Library"))
     if st:
         cmake_build(get_build_dir("Standalone"))
-
-def license_spltr(lib, st):
-    if lib:
-        cmake_build(get_build_dir("Library"), "write-licenses")
-    if st:
-        cmake_build(get_build_dir("Standalone"), "write-licenses")
 
 def configure_spltr(lib, st):
     if lib:
@@ -202,21 +213,16 @@ def install_spltr(lib, st):
     if st:
         cmake_install(get_build_dir("Standalone"))
 
-def get_version_and_names():
-    with open('CMakeLists.txt', 'r') as file:
-        cmake_content = file.read()
-    with open('Standalone/CMakeLists.txt', 'r') as file:
-        standalone_content = file.read()
-
-    lib_ver = re.search(r'VERSION\s+(\d+\.\d+\.\d+)', cmake_content).group(1)
-    lib_name = re.search(r'set\(LIBRARY_NAME\s+(\w+)', cmake_content).group(1)
-    st_name = re.search(r'set\(STANDALONE_NAME\s+(\w+)', standalone_content).group(1)
-
-    return lib_ver, lib_name, st_name
+def license_spltr(lib, st):
+    lib_ver, lib_name, st_name = get_version_and_names()
+    if lib:
+        cmake_build(get_build_dir("Library"), f"write-licenses-{lib_name}")
+    if st:
+        cmake_build(get_build_dir("Standalone"), f"write-licenses-{st_name}")
 
 def create_archive(source_dir, out_path):
     with tarfile.open(out_path, "w:gz") as tar:
-        tar.add(source_dir, arcname=os.path.basename(source_dir))
+        tar.add(source_dir, arcname=".")
     print(f"Created archive: {out_path}")
 
 def artefacts_spltr(lib, st):
@@ -320,6 +326,9 @@ task_map = {
     "Zero to Hero 🦸": lambda: (clean_spltr(True, True), conan_spltr(True, True), configure_spltr(True, True), build_spltr(True, True), exit_ok("")),
     "📚 Zero to Hero 🦸": lambda: (clean_spltr(True, False), conan_spltr(True, False), configure_spltr(True, False), build_spltr(True, False), exit_ok("")),
     "🎯 Zero to Hero 🦸": lambda: (clean_spltr(False, True), conan_spltr(False, True), configure_spltr(False, True), build_spltr(False, True), exit_ok("")),
+    "Zero to Release 🚀": lambda: (clean_spltr(True, True), conan_spltr(True, True), configure_spltr(True, True), build_spltr(True, True), install_spltr(True, True), artefacts_spltr(True, True),exit_ok("")),
+    "📚 Zero to Release 🚀": lambda: (clean_spltr(True, False), conan_spltr(True, False), configure_spltr(True, False), build_spltr(True, False), install_spltr(True, False), artefacts_spltr(True, False),exit_ok("")),
+    "🎯 Zero to Release 🚀": lambda: (clean_spltr(False, True), conan_spltr(False, True), configure_spltr(False, True), build_spltr(False, True), install_spltr(False, True), artefacts_spltr(False, True),exit_ok("")),
     "Clean 🧹": lambda: (clean_spltr(True, True), exit_ok("")),
     "📚 Clean 🧹": lambda: (clean_spltr(True, False), exit_ok("")),
     "🎯 Clean 🧹": lambda: (clean_spltr(False, True), exit_ok("")),
