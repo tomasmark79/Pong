@@ -88,7 +88,7 @@ static void PlayCDur();
 static void PlayProgressionCDur();
 static void PlayProgressionCMinor();
 static void PlayProgressionCMinorReversed();
-void        PlayRandomNoteInCMinorProgression();
+static void PlayRandomNoteInCMinorProgression();
 
 Engine::Engine()
 {
@@ -105,7 +105,6 @@ Engine::Engine()
     );
 
     // get current working directory modern c++
-
     std::filesystem::path path = std::filesystem::current_path();
     std::cout << "Current path is : " << path << std::endl;
 
@@ -120,8 +119,6 @@ Engine::Engine()
              ais3, b3,   c4, cis4, d4, dis4, e4,   f4, fis4, g4, gis4, a4, ais4, b4};
 
     InitNotes(notes);
-
-    // InitGame();
 
 #if defined(PLATFORM_WEB)
     emscripten_set_main_loop(UpdateDrawFrame, 60, 1);
@@ -168,8 +165,8 @@ void InitGame(void)
     player.life = PLAYER_MAX_LIFE;
 
     // Initialize ball
-    ball.position = (Vector2
-    ){player.position.x + ball.radius, player.position.y - player.size.y / 2 - ball.radius};
+    ball.position = (Vector2){player.position.x + ball.radius,
+                              player.position.y - player.size.y / 2 - ball.radius};
 
     ball.speed = (Vector2){0, 0};
     ball.radius = 7;
@@ -223,16 +220,15 @@ void UpdateGame(void)
             {
                 ball.speed.x *= -1;
                 PlayRandomNoteInCMinorProgression();
-                
             }
 
             if (ball.active && (ball.position.x - ball.radius) <= 0)
             {
                 ball.speed = (Vector2){0, 0};
-                    PlayRandomNoteInCMinorProgression();
+                PlayRandomNoteInCMinorProgression();
                 ball.active = false;
                 player.life--;
-                //PlayProgressionCMinor();
+                // PlayProgressionCMinor();
                 PlayProgressionCMinorReversed();
             }
 
@@ -241,7 +237,6 @@ void UpdateGame(void)
             {
                 ball.speed.y *= -1;
                 PlayRandomNoteInCMinorProgression();
-
             }
 
             // if ((ball.position.y + ball.radius) >= screenHeight)
@@ -256,11 +251,10 @@ void UpdateGame(void)
             if (CheckCollisionCircleRec(
                     ball.position,
                     ball.radius,
-                    (Rectangle
-                    ){player.position.x - player.size.x / 2,
-                      player.position.y - player.size.y / 2,
-                      player.size.x,
-                      player.size.y}
+                    (Rectangle){player.position.x - player.size.x / 2,
+                                player.position.y - player.size.y / 2,
+                                player.size.x,
+                                player.size.y}
                 ))
             {
                 if (ball.speed.x < 0)
@@ -388,33 +382,6 @@ void DrawGame(void)
         // Draw ball
         DrawCircleV(ball.position, ball.radius, MAROON);
 
-        // // Draw bricks
-        // for (int i = 0; i < LINES_OF_BRICKS; i++)
-        // {
-        //     for (int j = 0; j < BRICKS_PER_LINE; j++)
-        //     {
-        //         if (brick[i][j].active)
-        //         {
-        //             if ((i + j) % 2 == 0)
-        //                 DrawRectangle(
-        //                     brick[i][j].position.x - brickSize.x / 2,
-        //                     brick[i][j].position.y - brickSize.y / 2,
-        //                     brickSize.x,
-        //                     brickSize.y,
-        //                     GRAY
-        //                 );
-        //             else
-        //                 DrawRectangle(
-        //                     brick[i][j].position.x - brickSize.x / 2,
-        //                     brick[i][j].position.y - brickSize.y / 2,
-        //                     brickSize.x,
-        //                     brickSize.y,
-        //                     DARKGRAY
-        //                 );
-        //         }
-        //     }
-        // }
-
         if (pause)
             DrawText(
                 "GAME PAUSED",
@@ -451,57 +418,57 @@ void UpdateDrawFrame(void)
 
 void InitNotes(std::vector<AudioSample> &notes)
 {
-    notes[0].sound = LoadSound("Assets/C1.wav");
-    notes[1].sound = LoadSound("Assets/C#1.wav");
-    notes[2].sound = LoadSound("Assets/D1.wav");
-    notes[3].sound = LoadSound("Assets/D#1.wav");
-    notes[4].sound = LoadSound("Assets/E1.wav");
-    notes[5].sound = LoadSound("Assets/F1.wav");
-    notes[6].sound = LoadSound("Assets/F#1.wav");
-    notes[7].sound = LoadSound("Assets/G1.wav");
-    notes[8].sound = LoadSound("Assets/G#1.wav");
-    notes[9].sound = LoadSound("Assets/A1.wav");
-    notes[10].sound = LoadSound("Assets/A#1.wav");
-    notes[11].sound = LoadSound("Assets/B1.wav");
+    notes[0].sound = LoadSound("../Assets/C1.wav");
+    notes[1].sound = LoadSound("../Assets/C#1.wav");
+    notes[2].sound = LoadSound("../Assets/D1.wav");
+    notes[3].sound = LoadSound("../Assets/D#1.wav");
+    notes[4].sound = LoadSound("../Assets/E1.wav");
+    notes[5].sound = LoadSound("../Assets/F1.wav");
+    notes[6].sound = LoadSound("../Assets/F#1.wav");
+    notes[7].sound = LoadSound("../Assets/G1.wav");
+    notes[8].sound = LoadSound("../Assets/G#1.wav");
+    notes[9].sound = LoadSound("../Assets/A1.wav");
+    notes[10].sound = LoadSound("../Assets/A#1.wav");
+    notes[11].sound = LoadSound("../Assets/B1.wav");
 
-    notes[12].sound = LoadSound("Assets/C2.wav");
-    notes[13].sound = LoadSound("Assets/C#2.wav");
-    notes[14].sound = LoadSound("Assets/D2.wav");
-    notes[15].sound = LoadSound("Assets/D#2.wav");
-    notes[16].sound = LoadSound("Assets/E2.wav");
-    notes[17].sound = LoadSound("Assets/F2.wav");
-    notes[18].sound = LoadSound("Assets/F#2.wav");
-    notes[19].sound = LoadSound("Assets/G2.wav");
-    notes[20].sound = LoadSound("Assets/G#2.wav");
-    notes[21].sound = LoadSound("Assets/A2.wav");
-    notes[22].sound = LoadSound("Assets/A#2.wav");
-    notes[23].sound = LoadSound("Assets/B2.wav");
+    notes[12].sound = LoadSound("../Assets/C2.wav");
+    notes[13].sound = LoadSound("../Assets/C#2.wav");
+    notes[14].sound = LoadSound("../Assets/D2.wav");
+    notes[15].sound = LoadSound("../Assets/D#2.wav");
+    notes[16].sound = LoadSound("../Assets/E2.wav");
+    notes[17].sound = LoadSound("../Assets/F2.wav");
+    notes[18].sound = LoadSound("../Assets/F#2.wav");
+    notes[19].sound = LoadSound("../Assets/G2.wav");
+    notes[20].sound = LoadSound("../Assets/G#2.wav");
+    notes[21].sound = LoadSound("../Assets/A2.wav");
+    notes[22].sound = LoadSound("../Assets/A#2.wav");
+    notes[23].sound = LoadSound("../Assets/B2.wav");
 
-    notes[24].sound = LoadSound("Assets/C3.wav");
-    notes[25].sound = LoadSound("Assets/C#3.wav");
-    notes[26].sound = LoadSound("Assets/D3.wav");
-    notes[27].sound = LoadSound("Assets/D#3.wav");
-    notes[28].sound = LoadSound("Assets/E3.wav");
-    notes[29].sound = LoadSound("Assets/F3.wav");
-    notes[30].sound = LoadSound("Assets/F#3.wav");
-    notes[31].sound = LoadSound("Assets/G3.wav");
-    notes[32].sound = LoadSound("Assets/G#3.wav");
-    notes[33].sound = LoadSound("Assets/A3.wav");
-    notes[34].sound = LoadSound("Assets/A#3.wav");
-    notes[35].sound = LoadSound("Assets/B3.wav");
+    notes[24].sound = LoadSound("../Assets/C3.wav");
+    notes[25].sound = LoadSound("../Assets/C#3.wav");
+    notes[26].sound = LoadSound("../Assets/D3.wav");
+    notes[27].sound = LoadSound("../Assets/D#3.wav");
+    notes[28].sound = LoadSound("../Assets/E3.wav");
+    notes[29].sound = LoadSound("../Assets/F3.wav");
+    notes[30].sound = LoadSound("../Assets/F#3.wav");
+    notes[31].sound = LoadSound("../Assets/G3.wav");
+    notes[32].sound = LoadSound("../Assets/G#3.wav");
+    notes[33].sound = LoadSound("../Assets/A3.wav");
+    notes[34].sound = LoadSound("../Assets/A#3.wav");
+    notes[35].sound = LoadSound("../Assets/B3.wav");
 
-    notes[36].sound = LoadSound("Assets/C4.wav");
-    notes[37].sound = LoadSound("Assets/C#4.wav");
-    notes[38].sound = LoadSound("Assets/D4.wav");
-    notes[39].sound = LoadSound("Assets/D#4.wav");
-    notes[40].sound = LoadSound("Assets/E4.wav");
-    notes[41].sound = LoadSound("Assets/F4.wav");
-    notes[42].sound = LoadSound("Assets/F#4.wav");
-    notes[43].sound = LoadSound("Assets/G4.wav");
-    notes[44].sound = LoadSound("Assets/G#4.wav");
-    notes[45].sound = LoadSound("Assets/A4.wav");
-    notes[46].sound = LoadSound("Assets/A#4.wav");
-    notes[47].sound = LoadSound("Assets/B4.wav");
+    notes[36].sound = LoadSound("../Assets/C4.wav");
+    notes[37].sound = LoadSound("../Assets/C#4.wav");
+    notes[38].sound = LoadSound("../Assets/D4.wav");
+    notes[39].sound = LoadSound("../Assets/D#4.wav");
+    notes[40].sound = LoadSound("../Assets/E4.wav");
+    notes[41].sound = LoadSound("../Assets/F4.wav");
+    notes[42].sound = LoadSound("../Assets/F#4.wav");
+    notes[43].sound = LoadSound("../Assets/G4.wav");
+    notes[44].sound = LoadSound("../Assets/G#4.wav");
+    notes[45].sound = LoadSound("../Assets/A4.wav");
+    notes[46].sound = LoadSound("../Assets/A#4.wav");
+    notes[47].sound = LoadSound("../Assets/B4.wav");
 }
 
 void PlayRandomNote()
