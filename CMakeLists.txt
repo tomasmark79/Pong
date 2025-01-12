@@ -142,3 +142,4 @@ packageProject(
 # Set installation directory
 # ==============================================================================
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/${LIBRARY_NAME} DESTINATION include/)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Assets DESTINATION .)
