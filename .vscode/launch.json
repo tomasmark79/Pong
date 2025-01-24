@@ -1,12 +1,11 @@
 {
-    /* (c) Tomáš Mark 2024 */
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug Standalone Target",
+            "name": "Debug Default Standalone",
             "type": "cppdbg",
-            "request": "launch", /*🪲*/
-            "program": "${workspaceFolder}/Build/Standalone/default/Debug/Pong", 
+            "request": "launch",
+            "program": "${workspaceFolder}/Build/Standalone/default/Debug/Pong",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -24,9 +23,16 @@
             "preLaunchTask": "Direct Build"
         },
         {
+            "name": "Debug CMake configuration",
+            "type": "cmake",
+            "request": "launch",
+            "pipeName": "",
+            "cmakeDebugType": "external"
+        },
+        {
             "name": "Debug RelWithDebInfo Standalone Target",
             "type": "cppdbg",
-            "request": "launch", /*🪲*/
+            "request": "launch",
             "program": "${workspaceFolder}/Build/Standalone/default/RelWithDebInfo/Pong",
             "args": [],
             "stopAtEntry": false,
@@ -44,6 +50,5 @@
             ],
             "preLaunchTask": "Direct Build"
         }
-
     ]
 }
